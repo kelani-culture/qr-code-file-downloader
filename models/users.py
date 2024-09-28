@@ -1,4 +1,3 @@
-from typing import List
 from sqlalchemy import DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,4 +12,4 @@ class User(Base):
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime, server_onupdate=func.now())
 
-    documents  = relationship("Document", back_populates="user")
+    documents = relationship("Document", back_populates="user")
