@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from routers.pdf import file_converter
+from routers.users import routers as user_route
 
 app = FastAPI()
 
@@ -11,3 +12,4 @@ def welcome_view():
 
 
 app.include_router(file_converter)
+app.include_router(user_route)

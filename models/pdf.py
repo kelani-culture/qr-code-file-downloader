@@ -15,4 +15,4 @@ class Document(Base):
     added_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime, server_onupdate=func.now())
 
-    users = relationship("User", back_populates="documents")
+    user = relationship("User", back_populates="documents")
