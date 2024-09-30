@@ -22,6 +22,8 @@ def setup_database():
     # Initialize the test database schema
     Base.metadata.create_all(bind=engine)
 
+
+
 def override_get_db():
     db = TestSession()
     try:
@@ -37,3 +39,8 @@ def client(setup_database):
     return client
 
 
+@pytest.fixture(scope="function")
+def db_session():
+    session = TestSession()
+    Base.metadata.create_all(bind=engine)
+    yield session
