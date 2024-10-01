@@ -8,13 +8,13 @@ settings = db_settings()
 
 class Base(DeclarativeBase): ...
 
+
 DATABASE_URL = (
-    f"mysql+pymysql://{settings.local_db_user}:"+
-    f"{settings.local_db_password}@"+
-    f"{settings.local_hostname}/{settings.local_db_name}"
+    f"mysql+pymysql://{settings.local_db_user}:"
+    + f"{settings.local_db_password}@"
+    + f"{settings.local_hostname}/{settings.local_db_name}"
 )
-engine = create_engine(
-    DATABASE_URL, echo=False)
+engine = create_engine(DATABASE_URL, echo=False)
 
 Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
 
@@ -22,6 +22,6 @@ Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
 def get_db():
     session = Session()
     try:
-       yield session
+        yield session
     finally:
         session.close()

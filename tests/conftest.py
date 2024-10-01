@@ -17,30 +17,35 @@ engine = create_engine(
 
 TestSession = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope='function')
 def setup_database():
     # Initialize the test database schema
     Base.metadata.create_all(bind=engine)
+    yield TestSession
+    Base.metadata.drop_all(bind=engine)
 
 
 
-def override_get_db():
-    db = TestSession()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @pytest.fixture(scope="function")
 def client(setup_database):
+    def override_get_db():
+        db = TestSession()
+        try:
+            yield db
+        finally:
+            db.close()
     test_app.dependency_overrides[get_db] = override_get_db
     client = TestClient(test_app)
-    return client
+    yield client
 
 
 @pytest.fixture(scope="function")
-def db_session():
+def db_session(setup_database):
     session = TestSession()
-    Base.metadata.create_all(bind=engine)
-    yield session
+    try:
+        yield session
+    finally:
+        session.rollback()
+        session.close()
