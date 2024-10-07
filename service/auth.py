@@ -2,7 +2,7 @@ import json
 from typing import Annotated, Dict, Union
 
 import httpx
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from firebase_admin import auth
 from firebase_admin.auth import EmailAlreadyExistsError, InvalidIdTokenError
@@ -70,7 +70,8 @@ async def user_login(db: Session, email: str, password: str) -> Dict[str, str]:
         raise InvalidEmailOrPassword()
 
 
-def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+def get_current_user(request: Request, token: Annotated[str, Depends(oauth2_scheme)]):
+    """get current user login info"""
     cred = HTTPException(
         status_code=401,
         detail="Invalid authentication credentials",
@@ -85,6 +86,7 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
 
 
 def google_auth(token: str) -> Dict[str, Union[str, int]]:
+    """hanldes user google auth"""
     WEB_CLIENT_ID: str = setting.web_client_id
     try:
         idinfo = id_token.verify_oauth2_token(token, requests.Request(), WEB_CLIENT_ID)
@@ -109,9 +111,10 @@ async def generate_new_id_token(token: str) -> Dict[str, str]:
     """
     generate new id token for the user from firebase
     """
-    firebase_url = "https://securetoken.googleapis.com/v1/token?key={}".format(setting.web_api_key)
+    firebase_url = "https://securetoken.googleapis.com/v1/token?key={}".format(
+        setting.web_api_key
+    )
     try:
-
         async with httpx.AsyncClient() as client:
             payloads = {"refresh_token": token, "grant_type": "refresh_token"}
             pay_json = json.dumps(payloads)
@@ -124,4 +127,3 @@ async def generate_new_id_token(token: str) -> Dict[str, str]:
         return data
     except HTTPError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    

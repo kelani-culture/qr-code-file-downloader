@@ -1,11 +1,13 @@
 from fastapi import HTTPException
-from passlib.context import CryptContext
-from sqlalchemy.orm import Session
-from hashids import Hashids #type: ignore
-from schemas.settings import settings
+from fastapi.security import JSONResponse
 from firebase_admin import auth
 from firebase_admin.auth import InvalidIdTokenError
+from hashids import Hashids  # type: ignore
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
 from models.users import User
+from schemas.settings import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -14,27 +16,24 @@ setting = settings()
 hashid = Hashids(salt=setting.hash_salt, min_length=10)
 
 
+def set_user_cookie(resp: JSONResponse, access_token: str) -> None:
+    """set user token in the browser cookie"""
+    resp.set_cookie("access_token", access_token)
+
 
 def verify_id_token(token: str):
+    """verify user provided token..."""
     cred = HTTPException(
-            status_code=401,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        status_code=401,
+        detail="Invalid authentication credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     try:
         decode_token = auth.verify_id_token(token)
         print(decode_token)
         return decode_token
     except InvalidIdTokenError:
         raise cred
-
-
-
-
-
-
-
-
 
 
 def hash_password(raw_pass: str) -> str:
@@ -45,7 +44,7 @@ def verify_hash_password(raw_pass: str, hashed_password: str) -> bool:
     return pwd_context.verify(raw_pass, hashed_password)
 
 
-def authenticate_user(db: Session, email: str, password: str ) -> User | None:
+def authenticate_user(db: Session, email: str, password: str) -> User | None:
     """
     Authenticate user with both email and password
     """
@@ -55,6 +54,7 @@ def authenticate_user(db: Session, email: str, password: str ) -> User | None:
     if not verify_hash_password(password, user.password):
         return None
     return user
+
 
 def hash_id(user_id: int) -> str:
     """
@@ -67,4 +67,4 @@ def un_hash_id(hashed_val: str) -> str:
     """
     decode user id
     """
-    return hashid.decode(hashed_val) 
+    return hashid.decode(hashed_val)
