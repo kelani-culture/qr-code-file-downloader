@@ -1,56 +1,64 @@
-from datetime import timedelta
-from typing import Dict, Union
+import json
+from typing import Dict
 
+import httpx
+from fastapi import HTTPException
+from firebase_admin import auth
+from firebase_admin.auth import EmailAlreadyExistsError
+from firebase_admin.exceptions import FirebaseError
+from httpx import HTTPError
 from sqlalchemy.orm import Session
 
 from exceptions import InvalidEmailOrPassword, UserAlreadyExist
-from models.users import User
 from schemas.settings import settings
-
-from .token import create_jwt_token
-from .utils import authenticate_user, hash_id, hash_password
 
 setting = settings()  # jwt token settings
 
+FIREBASE_URL = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
 
-def register_user(db: Session, email: str, password: str) -> None:
+
+async def register_user(db: Session, email: str, password: str) -> None:
     """
     Handles users registration....
     """
-    user_exist = db.query(User).filter(User.email == email).first()
-
-    if user_exist:
+    try:
+        auth.create_user(
+            email=email,
+            password=password,
+            email_verified=False,
+        )
+    except EmailAlreadyExistsError:
         raise UserAlreadyExist()
-    password = hash_password(password)
-    user = User(email=email, password=password)
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+    except FirebaseError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    auth.generate_email_verification_link(email=email, action_code_settings=None)
 
 
-def user_login(
+async def user_login(
     db: Session, email: str, password: str, **kwargs
-) -> Dict[str, Union[str, timedelta]]:
+) -> Dict[str, str]:
     """
     handles user login
     """
-    user = authenticate_user(db, email, password)
-    if user is None:
+    try:
+        async with httpx.AsyncClient() as client:
+            payload = json.dumps(
+                {"email": email, "password": password, "returnSecureToken": True}
+            )
+            resp = await client.post(
+                f"{FIREBASE_URL}?key={setting.web_api_key}", data=payload
+            )
+            resp.raise_for_status()
+
+            data = {
+                "email": resp.json()["email"],
+                "id_token": resp.json()["idToken"],
+                "refresh_token": resp.json()["refreshToken"],
+                "expires_in": resp.json()["expiresIn"]
+            }
+            return data
+    except HTTPError:
         raise InvalidEmailOrPassword()
-
-    a_data = {"sub": hash_id(user.id), "type": "user"}  # access_token payload
-
-    access_token = create_jwt_token(
-        a_data, setting.access_token_secret_key, setting.access_token_expires_min # type: ignore
-    )
-
-    refresh_token = create_jwt_token(
-        a_data, setting.refresh_token_secret_key, setting.refresh_token_expires_min #type: ignore
-    )
-
-    tokens = {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "expires_in_min": setting.access_token_expires_min.total_seconds() // 60,
-    }
-    return tokens
+    except auth.InvalidIdTokenError:
+        raise

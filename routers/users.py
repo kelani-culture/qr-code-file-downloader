@@ -23,14 +23,14 @@ routers = APIRouter(prefix="/auth/user")
     response_model=Union[SignUpResponseSchema, BadResponseSchema],
     status_code=201,
 )
-def user_signup(
+async def user_signup(
     user: SignUpSchema, db: Session = Depends(get_db)
 ) -> SignUpResponseSchema | JSONResponse:
     """
     User signup routes
     """
     try:
-        register_user(db, user.email, user.password)
+       await register_user(db, user.email, user.password)
     except UserAlreadyExist:
         bad_resp = BadResponseSchema(
             message="User email already exists please login", status_code=400
@@ -41,14 +41,14 @@ def user_signup(
 
 
 @routers.post("/login", response_model=Union[LoginResponseSchema, BadResponseSchema])
-def login_user(
+async def login_user(
     data: LoginSchema, db: Session = Depends(get_db)
 ) -> LoginResponseSchema | JSONResponse:
     """
     login route
     """
     try:
-        user = user_login(db, data.email, data.password)
+        user = await user_login(db, data.email, data.password)
     except InvalidEmailOrPassword:
         bad_resp = BadResponseSchema(
             message="Invalid email or password provided", status_code=400

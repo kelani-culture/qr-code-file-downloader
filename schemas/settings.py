@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     access_token_expires_min: timedelta = timedelta(minutes=5)
     refresh_token_expires_min: timedelta = timedelta(minutes=60)
     hash_salt: str
+    web_api_key: str
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="allow")
 
 

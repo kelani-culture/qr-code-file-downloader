@@ -2,6 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from schemas.settings import db_settings
+from firebase_admin import firestore #type: ignore
 
 settings = db_settings()
 
@@ -20,8 +21,4 @@ Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
 
 
 def get_db():
-    session = Session()
-    try:
-        yield session
-    finally:
-        session.close()
+    yield firestore.client()

@@ -18,10 +18,11 @@ class LoginSchema(UserSchema): ...
 
 
 class LoginResponseSchema(BaseModel):
-    access_token: str
+    email: EmailStr
+    id_token: str
     refresh_token: str
     type: str = "Bearer"
-    expires_in_min: int
+    expires_in: int
 
 
 class BadResponseSchema(SignUpResponseSchema):
