@@ -36,3 +36,6 @@ class Token(BaseModel): ...
 
 class GoogleSignInToken(BaseModel):
     token: str
+
+class RefreshToken(BaseModel):
+    refresh_token: str

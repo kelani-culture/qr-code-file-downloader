@@ -1,9 +1,9 @@
 import json
 from typing import Annotated, Dict, Union
 
-from fastapi.security import OAuth2AuthorizationCodeBearer
 import httpx
 from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2AuthorizationCodeBearer
 from firebase_admin import auth
 from firebase_admin.auth import EmailAlreadyExistsError, InvalidIdTokenError
 from firebase_admin.exceptions import FirebaseError
@@ -18,11 +18,11 @@ from schemas.settings import settings
 setting = settings()  # jwt token settings
 
 
-
 oauth2_scheme = OAuth2AuthorizationCodeBearer(
     authorizationUrl="https://accounts.google.com/o/oauth2/auth",
-    tokenUrl="/user/auth/login"
+    tokenUrl="/user/auth/login",
 )
+
 
 async def register_user(db: Session, email: str, password: str) -> None:
     """
@@ -46,7 +46,9 @@ async def user_login(db: Session, email: str, password: str) -> Dict[str, str]:
     """
     handles user login
     """
-    FIREBASE_URL = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
+    FIREBASE_URL = (
+        "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
+    )
     try:
         async with httpx.AsyncClient() as client:
             payload = json.dumps(
@@ -101,3 +103,25 @@ def google_auth(token: str) -> Dict[str, Union[str, int]]:
         return {"message": "Invalid token provided", "status_code": 400}
 
     return {"message": "User email already exists", "status_code": 201}
+
+
+async def generate_new_id_token(token: str) -> Dict[str, str]:
+    """
+    generate new id token for the user from firebase
+    """
+    firebase_url = "https://securetoken.googleapis.com/v1/token?key={}".format(setting.web_api_key)
+    try:
+
+        async with httpx.AsyncClient() as client:
+            payloads = {"refresh_token": token, "grant_type": "refresh_token"}
+            pay_json = json.dumps(payloads)
+            resp = await client.post(firebase_url, data=pay_json)
+
+            resp.raise_for_status()
+        data: Dict[str, str] = resp.json()
+        data.pop("access_token")
+        data.pop("project_id")
+        return data
+    except HTTPError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    

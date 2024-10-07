@@ -1,6 +1,6 @@
 from typing import Annotated, Union
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header, Request
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -11,10 +11,11 @@ from schemas.user_schemas import (
     BadResponseSchema,
     GoogleSignInToken,
     LoginResponseSchema,
+    RefreshToken,
     SignUpResponseSchema,
     SignUpSchema,
 )
-from service.auth import google_auth, register_user, user_login
+from service.auth import google_auth, register_user, user_login, generate_new_id_token
 
 routers = APIRouter(prefix="/auth/user", tags=["Auth"])
 
@@ -63,3 +64,13 @@ async def login_user(
 async def goolge_auth_sign_up(google_token: GoogleSignInToken) -> JSONResponse:
     res = google_auth(google_token.token)
     return JSONResponse(content=res, status_code=res["status_code"])
+
+
+
+@routers.post("/refresh-token")
+async def refresh_token(request: Request, r_token: Annotated[RefreshToken, Header()]) -> JSONResponse:
+    """
+    user refresh token
+    """
+    token = await generate_new_id_token(r_token.refresh_token)
+    return JSONResponse(content=token, status_code=200)
