@@ -19,7 +19,7 @@ class LoginSchema(UserSchema): ...
 
 class LoginResponseSchema(BaseModel):
     email: EmailStr
-    id_token: str
+    access_token: str
     refresh_token: str
     type: str = "Bearer"
     expires_in: int

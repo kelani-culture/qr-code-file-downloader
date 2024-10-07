@@ -1,9 +1,9 @@
 import json
-from typing import Annotated, Dict, Union
+from typing import Annotated, Dict, Optional, Union
 
 import httpx
 from fastapi import Depends, HTTPException, Request
-from fastapi.security import OAuth2AuthorizationCodeBearer
+from fastapi.security import OAuth2PasswordBearer
 from firebase_admin import auth
 from firebase_admin.auth import EmailAlreadyExistsError, InvalidIdTokenError
 from firebase_admin.exceptions import FirebaseError
@@ -18,10 +18,14 @@ from schemas.settings import settings
 setting = settings()  # jwt token settings
 
 
-oauth2_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl="https://accounts.google.com/o/oauth2/auth",
-    tokenUrl="/user/auth/login",
-)
+oauth2_password_scheme = OAuth2PasswordBearer(tokenUrl="/auth/user/login")
+
+
+# TODO implement for the user oauth2 sign in
+# oauth2_scheme = OAuth2AuthorizationCodeBearer(
+#     authorizationUrl="https://accounts.google.com/o/oauth2/auth",
+#     tokenUrl="/user/auth/google-sign-in",
+# )
 
 
 async def register_user(db: Session, email: str, password: str) -> None:
@@ -61,7 +65,7 @@ async def user_login(db: Session, email: str, password: str) -> Dict[str, str]:
 
             data = {
                 "email": resp.json()["email"],
-                "id_token": resp.json()["idToken"],
+                "access_token": resp.json()["idToken"],
                 "refresh_token": resp.json()["refreshToken"],
                 "expires_in": resp.json()["expiresIn"],
             }
@@ -70,7 +74,9 @@ async def user_login(db: Session, email: str, password: str) -> Dict[str, str]:
         raise InvalidEmailOrPassword()
 
 
-def get_current_user(request: Request, token: Annotated[str, Depends(oauth2_scheme)]):
+def get_current_user(
+    request: Request, token: Annotated[Optional[str], Depends(oauth2_password_scheme)]
+):
     """get current user login info"""
     cred = HTTPException(
         status_code=401,
@@ -78,6 +84,12 @@ def get_current_user(request: Request, token: Annotated[str, Depends(oauth2_sche
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        token = request.headers.get("Authorization")
+        if not token or "Bearer" not in token:
+            print(token)
+            raise cred
+
+        token = token.split(" ")[1]
         decode_token = auth.verify_id_token(token)
         print(decode_token)
         return decode_token

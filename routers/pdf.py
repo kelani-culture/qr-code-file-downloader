@@ -13,3 +13,9 @@ async def pdf_converter(
     file: Annotated[UploadFile, File(...)], user=Depends(get_current_user)
 ):
     ...
+
+
+#TODO delete this route after done with test do not push to Production
+@routers.get("/protected-router")
+async def protected_damn(user=Depends(get_current_user)):
+    return {"message":"I'm bloody protected dawg f you"}
