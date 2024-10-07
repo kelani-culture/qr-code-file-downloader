@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 import firebase_admin.app_check #type: ignore
 
-from routers.pdf import file_converter
+from routers.pdf import routers as file_converter
 from routers.users import routers as user_route
 
 

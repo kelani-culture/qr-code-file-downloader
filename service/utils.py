@@ -1,8 +1,10 @@
+from fastapi import HTTPException
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from hashids import Hashids #type: ignore
 from schemas.settings import settings
-
+from firebase_admin import auth
+from firebase_admin.auth import InvalidIdTokenError
 from models.users import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -10,6 +12,29 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 setting = settings()
 hashid = Hashids(salt=setting.hash_salt, min_length=10)
+
+
+
+def verify_id_token(token: str):
+    cred = HTTPException(
+            status_code=401,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    try:
+        decode_token = auth.verify_id_token(token)
+        print(decode_token)
+        return decode_token
+    except InvalidIdTokenError:
+        raise cred
+
+
+
+
+
+
+
+
 
 
 def hash_password(raw_pass: str) -> str:

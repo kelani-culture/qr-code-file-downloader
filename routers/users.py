@@ -1,21 +1,22 @@
-from typing import Union
+from typing import Annotated, Union
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from database import get_db
 from exceptions import InvalidEmailOrPassword, UserAlreadyExist
 from schemas.user_schemas import (
     BadResponseSchema,
+    GoogleSignInToken,
     LoginResponseSchema,
-    LoginSchema,
     SignUpResponseSchema,
     SignUpSchema,
 )
-from service.auth import register_user, user_login
+from service.auth import google_auth, register_user, user_login
 
-routers = APIRouter(prefix="/auth/user")
+routers = APIRouter(prefix="/auth/user", tags=["Auth"])
 
 
 @routers.post(
@@ -30,7 +31,7 @@ async def user_signup(
     User signup routes
     """
     try:
-       await register_user(db, user.email, user.password)
+        await register_user(db, user.email, user.password)
     except UserAlreadyExist:
         bad_resp = BadResponseSchema(
             message="User email already exists please login", status_code=400
@@ -42,17 +43,23 @@ async def user_signup(
 
 @routers.post("/login", response_model=Union[LoginResponseSchema, BadResponseSchema])
 async def login_user(
-    data: LoginSchema, db: Session = Depends(get_db)
+    data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)
 ) -> LoginResponseSchema | JSONResponse:
     """
     login route
     """
     try:
-        user = await user_login(db, data.email, data.password)
+        user = await user_login(db, data.username, data.password)
     except InvalidEmailOrPassword:
         bad_resp = BadResponseSchema(
             message="Invalid email or password provided", status_code=400
         ).model_dump()
         return JSONResponse(content=bad_resp, status_code=400)
 
-    return LoginResponseSchema(**user)# type: ignore
+    return LoginResponseSchema(**user)  # type: ignore
+
+
+@routers.post("/google-sign-in")
+async def goolge_auth_sign_up(google_token: GoogleSignInToken) -> JSONResponse:
+    res = google_auth(google_token.token)
+    return JSONResponse(content=res, status_code=res["status_code"])

@@ -31,3 +31,8 @@ class BadResponseSchema(SignUpResponseSchema):
 
 
 class Token(BaseModel): ...
+
+
+
+class GoogleSignInToken(BaseModel):
+    token: str
