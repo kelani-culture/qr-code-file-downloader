@@ -5,6 +5,7 @@ import httpx
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from firebase_admin import auth
+import firebase_admin
 from firebase_admin.auth import EmailAlreadyExistsError, InvalidIdTokenError
 from firebase_admin.exceptions import FirebaseError
 from google.auth.transport import requests
@@ -86,13 +87,13 @@ def get_current_user(
     try:
         token = request.headers.get("Authorization")
         if not token or "Bearer" not in token:
-            print(token)
             raise cred
 
         token = token.split(" ")[1]
         decode_token = auth.verify_id_token(token)
-        print(decode_token)
-        return decode_token
+
+        user = auth.get_user(decode_token.get("uid"))
+        return user
     except InvalidIdTokenError:
         raise cred
 

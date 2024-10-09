@@ -1,19 +1,22 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi.responses import FileResponse, JSONResponse
 
-from models.pdf import Document  # noqa: F401
 from service.auth import get_current_user
+from service.token import handle_file_upload
 
-routers = APIRouter(prefix="/file", tags=["User File"])
+routers = APIRouter(prefix="/doc", tags=["User File"])
 
 
-@routers.post("/")
-async def pdf_converter(
+
+@routers.post("/upload-file")
+async def file_upload(
     file: Annotated[UploadFile, File(...)], user=Depends(get_current_user)
-):
-    ...
-
+) -> JSONResponse:
+    print(user) 
+    url = await handle_file_upload(user.uid, file)
+    return JSONResponse(content={"message": "File uploaded successfully", "url": url})
 
 #TODO delete this route after done with test do not push to Production
 @routers.get("/protected-router")

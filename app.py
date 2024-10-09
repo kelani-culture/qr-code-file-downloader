@@ -1,6 +1,6 @@
 import firebase_admin  # type: ignore
 from fastapi import FastAPI
-from firebase_admin import credentials
+from firebase_admin import credentials, firestore
 from contextlib import asynccontextmanager
 
 import firebase_admin.app_check #type: ignore
@@ -19,7 +19,9 @@ async def lifespan(app: FastAPI):
     """
     if not firebase_admin._apps:
         cred = credentials.Certificate("service_account_key.json")
-        firebase_admin.initialize_app(cred)
+        firebase_admin.initialize_app(cred, {
+            "storageBucket": "gs://qrcode-file-downloader.appspot.com",
+        })
     yield
 
 
@@ -30,5 +32,5 @@ def welcome_view():
     return {"info": "Welcome to pdf converter home page"}
 
 
-app.include_router(file_converter)
 app.include_router(user_route)
+app.include_router(file_converter)
