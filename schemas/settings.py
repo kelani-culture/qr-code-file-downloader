@@ -1,6 +1,7 @@
 import pathlib
 from datetime import timedelta
 from functools import lru_cache
+from typing import List
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -28,6 +29,7 @@ class Settings(BaseSettings):
     hash_salt: str
     web_api_key: str
     web_client_id: str
+    frontend_url: List[str] = ["127.0.0.1:300", "localhost:9000"]
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="allow")
 
 

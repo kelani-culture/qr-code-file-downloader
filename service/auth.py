@@ -5,7 +5,6 @@ import httpx
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from firebase_admin import auth
-import firebase_admin
 from firebase_admin.auth import EmailAlreadyExistsError, InvalidIdTokenError
 from firebase_admin.exceptions import FirebaseError
 from google.auth.transport import requests

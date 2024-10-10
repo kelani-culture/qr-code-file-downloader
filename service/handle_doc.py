@@ -1,8 +1,9 @@
 import uuid
 
+import qrcode
 from fastapi import HTTPException, UploadFile
 from firebase_admin import firestore, storage
-
+from io import BytesIO
 import fire  # noqa
 
 db = firestore.client()
@@ -81,7 +82,7 @@ async def handle_file_upload(user_id: str, file: UploadFile) -> str:
     try:
         file_ext = file.filename.split(".")[1]
 
-        if "."+file_ext not in FILE_EXTENSION:
+        if "." + file_ext not in FILE_EXTENSION:
             raise HTTPException(status_code=400, detail="File not supported")
         unique_filename = f"{file.filename}{uuid.uuid4()}.{file_ext}"
 
@@ -107,13 +108,45 @@ async def handle_file_upload(user_id: str, file: UploadFile) -> str:
         }
         db.collection("user_file").add(file_data)
     except Exception as e:
-        print(e)
         raise HTTPException(status_code=500, detail=str(e))
+    
 
-    return file_url
+    return file_url, create_qr_code(file.filename, file_url)
 
 
-def create_qr_code(file_url: str): ...
+def create_qr_code(file_name: str, file_url: str):
+    """
+    create qrcode for downloading user file
+    """
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(file_url)
+
+    qr.make(fit=True)
+    img = qr.make_image(fill="black", back_color="white")
+
+    qr_code_file = f"qrcode/{file_name}_qrcode.png"
+
+    # Convert image to bytes for Firebase storage
+    img_bytes_array = BytesIO()
+    img.save(img_bytes_array, format="PNG")
+    img_bytes_array.seek(0)
+
+
+    bucket = storage.bucket()
+    blob = bucket.blob(qr_code_file)
+    blob.upload_from_file(img_bytes_array, content_type='image/png')
+
+    # Make the file publicly accessible and get the URL
+    blob.make_public()
+    qr_code_url = blob.public_url
+    return qr_code_url
+
+
 
 
 # this are being commenterd because ion know But I won't push this to production of cause...
