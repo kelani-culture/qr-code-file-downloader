@@ -109,7 +109,7 @@ async def handle_file_upload(user_id: str, file: UploadFile) -> str:
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    download_url = f"{setting.backend_host}/file/download/{file_col[1].id}"
+    download_url = f"{setting.backend_host}/doc/download/file/{file_col[1].id}"
     qrcode_url = await create_qr_code(file.filename, download_url, user_id, file_col) 
     return download_url, qrcode_url
 
@@ -153,7 +153,7 @@ async def create_qr_code(file_name: str, file_url: str, user_id: str, file_obj) 
 
     qr_col = db.collection("qrcode").add(data)
 
-    download_qr = f"{setting.backend_host}/download/qrcode/{qr_col[1].id}"
+    download_qr = f"{setting.backend_host}/doc/download/qrcode/{qr_col[1].id}"
     return download_qr
 
 
