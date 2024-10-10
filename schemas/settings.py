@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     hash_salt: str
     web_api_key: str
     web_client_id: str
+    service_account_key_json: str
     frontend_url: List[str] = ["127.0.0.1:300", "localhost:9000"]
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="allow")
 
