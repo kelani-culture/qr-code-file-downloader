@@ -1,7 +1,3 @@
-Here's a structured README documentation for your QR Code File Downloader project:
-
----
-
 # QR Code File Downloader
 
 **QR Code File Downloader** is a web application that allows users to upload files and download them using QR codes. Users can also download the QR code image for their uploaded files. This project aims to simplify file sharing through QR codes, making it easy for users to access their files quickly.
@@ -11,6 +7,7 @@ Here's a structured README documentation for your QR Code File Downloader projec
 - [QR Code File Downloader](#qr-code-file-downloader)
   - [Table of Contents](#table-of-contents)
   - [Features](#features)
+  - [Technologies Used](#technologies-used)
   - [API Endpoints](#api-endpoints)
     - [File Upload](#file-upload)
     - [File Download](#file-download)
@@ -21,6 +18,7 @@ Here's a structured README documentation for your QR Code File Downloader projec
       - [Refresh User Token](#refresh-user-token)
   - [Installation](#installation)
   - [Usage](#usage)
+  - [Accessing the Application](#accessing-the-application)
   - [Contributing](#contributing)
   - [License](#license)
 
@@ -31,6 +29,13 @@ Here's a structured README documentation for your QR Code File Downloader projec
 - **QR Code Generation**: A unique QR code is generated for each uploaded file, allowing easy access.
 - **QR Code Download**: Users can download the QR code image to share their files quickly.
 - **User Authentication**: Secure signup and login for users.
+
+## Technologies Used
+
+- **FastAPI**: A modern web framework for building APIs with Python.
+- **Python**: The programming language used for the application.
+- **Firebase**: Used for user authentication and other backend services.
+- **Render**: Hosting platform for deploying the application.
 
 ## API Endpoints
 
@@ -85,12 +90,14 @@ Here's a structured README documentation for your QR Code File Downloader projec
 ## Installation
 
 1. Clone the repository:
+
    ```bash
    git clone <repository-url>
    cd qr-code-file-downloader
    ```
 
 2. Install the required dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -98,8 +105,15 @@ Here's a structured README documentation for your QR Code File Downloader projec
 3. Configure your environment variables (if any).
 
 4. Run the application:
+
    ```bash
-   uvicorn main:app --reload
+   uvicorn app:app --reload --port 8000
+   ```
+
+   Alternatively, you can use:
+
+   ```bash
+   fastapi dev
    ```
 
 ## Usage
@@ -109,6 +123,11 @@ Here's a structured README documentation for your QR Code File Downloader projec
 3. **Upload a File**: Use the upload-file endpoint to upload your file.
 4. **Download Your File**: Use the download endpoint with your file ID to download your uploaded file.
 5. **Download QR Code**: Use the QR code download endpoint with your QR code ID to get the QR code image.
+
+## Accessing the Application
+
+- **Hosted Documentation**: [QR Code File Downloader API Docs](https://qr-code-file-downloader.onrender.com/docs)
+- **Localhost**: You can access the application on your local machine at `http://127.0.0.1:8000`.
 
 ## Contributing
 
@@ -120,4 +139,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ---
 
-Feel free to customize any sections to better fit your project's specifics or add any additional details as needed!
+Feel free to make any additional adjustments or let me know if you need more changes!
