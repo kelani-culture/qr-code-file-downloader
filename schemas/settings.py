@@ -1,5 +1,4 @@
 import pathlib
-from datetime import timedelta
 from functools import lru_cache
 from typing import List
 
@@ -25,6 +24,7 @@ class Settings(BaseSettings):
     web_client_id: str
     service_account_key_json: str
     frontend_url: List[str] = ["127.0.0.1:300", "localhost:9000"]
+    backend_host: str = "https://qr-code-file-downloader.onrender.com"
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="allow")
 
 

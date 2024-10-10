@@ -1,14 +1,16 @@
 import uuid
+from io import BytesIO
 
 import qrcode
 from fastapi import HTTPException, UploadFile
 from firebase_admin import firestore, storage
-from io import BytesIO
+
 import fire  # noqa
+from schemas.settings import settings
 
 db = firestore.client()
 
-
+setting = settings()
 FILE_EXTENSION = {
     ".jpg",
     ".jpeg",
@@ -38,6 +40,7 @@ FILE_EXTENSION = {
     ".3gp",
     ".pdf",
     ".doc",
+    ".docx",
     ".xls",
     ".ppt",
     ".pptx",
@@ -74,10 +77,6 @@ async def handle_file_upload(user_id: str, file: UploadFile) -> str:
     """
     Handle user file upload to firestore
     """
-    # user_ref = db.collection("users").document(user_id)
-    # user_data = user_ref.get()
-    # if not user_data.exists:
-    #     raise HTTPException(status_code=404, detail="User not found")
     file_url = ""
     try:
         file_ext = file.filename.split(".")[1]
@@ -106,15 +105,16 @@ async def handle_file_upload(user_id: str, file: UploadFile) -> str:
             "content_type": file.content_type,
             "uploaded_at": firestore.SERVER_TIMESTAMP,
         }
-        db.collection("user_file").add(file_data)
+        file_col = db.collection("user_file").add(file_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
 
-    return file_url, create_qr_code(file.filename, file_url)
+    download_url = f"{setting.backend_host}/file/download/{file_col[1].id}"
+    qrcode_url = await create_qr_code(file.filename, download_url, user_id, file_col) 
+    return download_url, qrcode_url
 
 
-def create_qr_code(file_name: str, file_url: str):
+async def create_qr_code(file_name: str, file_url: str, user_id: str, file_obj) -> str:
     """
     create qrcode for downloading user file
     """
@@ -129,25 +129,59 @@ def create_qr_code(file_name: str, file_url: str):
     qr.make(fit=True)
     img = qr.make_image(fill="black", back_color="white")
 
-    qr_code_file = f"qrcode/{file_name}_qrcode.png"
+    qr_code_path = f"qrcode/{file_name}_qrcode.png"
 
     # Convert image to bytes for Firebase storage
     img_bytes_array = BytesIO()
     img.save(img_bytes_array, format="PNG")
     img_bytes_array.seek(0)
 
-
     bucket = storage.bucket()
-    blob = bucket.blob(qr_code_file)
-    blob.upload_from_file(img_bytes_array, content_type='image/png')
+    blob = bucket.blob(qr_code_path)
+    blob.upload_from_file(img_bytes_array, content_type="image/png")
 
     # Make the file publicly accessible and get the URL
     blob.make_public()
     qr_code_url = blob.public_url
-    return qr_code_url
+
+    data = {
+        "qr_path": qr_code_path,
+        "qrcode_url": qr_code_url,
+        "file_id": file_obj[1].id,
+        "user_id": user_id,
+    }
+
+    qr_col = db.collection("qrcode").add(data)
+
+    download_qr = f"{setting.backend_host}/download/qrcode/{qr_col[1].id}"
+    return download_qr
+
+
+async def user_file(file_id: str):
+    """
+    handle user file download
+    """
+    file = db.collection("user_file").document(file_id)
+
+    file = file.get()
+
+    if not file.exists:
+        raise HTTPException(detail="File not found", status_code=404)
+
+    return file
 
 
 
+async def handle_user_qrcode_download(qrcode_id: str):
+    """
+    handle user qrcode download
+    """
+    qrcode = db.collection("qrcode").document(qrcode_id)
+    qrcode = qrcode.get()
+    if not qrcode.exists:
+        raise HTTPException(status_code=404, detail="qrcode not found")
+    
+    return qrcode
 
 # this are being commenterd because ion know But I won't push this to production of cause...
 # from datetime import datetime, timedelta
