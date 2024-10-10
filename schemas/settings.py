@@ -11,13 +11,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 BASE_DIR = pathlib.Path(__file__).resolve().parent.parent
 
 
-class DataBaseSettings(BaseSettings):
-    local_hostname: str
-    local_db_user: str
-    local_db_name: str
-    local_db_password: str
+# class DataBaseSettings(BaseSettings):
+#     local_hostname: str
+#     local_db_user: str
+#     local_db_name: str
+#     local_db_password: str
 
-    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="allow")
+#     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="allow")
 
 
 class Settings(BaseSettings):
@@ -33,9 +33,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="allow")
 
 
-@lru_cache
-def db_settings():
-    return DataBaseSettings()
+# @lru_cache
+# def db_settings():
+#     return DataBaseSettings()
 
 
 @lru_cache
