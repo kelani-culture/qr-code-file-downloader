@@ -21,12 +21,6 @@ BASE_DIR = pathlib.Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
-    access_token_secret_key: str
-    refresh_token_secret_key: str
-
-    access_token_expires_min: timedelta = timedelta(minutes=5)
-    refresh_token_expires_min: timedelta = timedelta(minutes=60)
-    hash_salt: str
     web_api_key: str
     web_client_id: str
     service_account_key_json: str
