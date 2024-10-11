@@ -9,6 +9,7 @@ from firebase_admin.auth import EmailAlreadyExistsError, InvalidIdTokenError
 from firebase_admin.exceptions import FirebaseError
 from google.auth.transport import requests
 from google.oauth2 import id_token
+from fastapi.security import HTTPBearer
 from httpx import HTTPError
 from sqlalchemy.orm import Session
 
@@ -18,7 +19,7 @@ from schemas.settings import settings
 setting = settings()  # jwt token settings
 
 
-oauth2_password_scheme = OAuth2PasswordBearer(tokenUrl="/auth/user/login")
+oauth2_password_scheme = HTTPBearer()
 
 
 # TODO implement for the user oauth2 sign in

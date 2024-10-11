@@ -14,6 +14,7 @@ from schemas.user_schemas import (
     RefreshToken,
     SignUpResponseSchema,
     SignUpSchema,
+    LoginSchema,
 )
 from service.auth import google_auth, register_user, user_login, generate_new_id_token
 
@@ -44,13 +45,13 @@ async def user_signup(
 
 @routers.post("/login", response_model=Union[LoginResponseSchema, BadResponseSchema])
 async def login_user(
-    data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)
+    data: LoginSchema, db: Session = Depends(get_db)
 ) -> LoginResponseSchema | JSONResponse:
     """
     login route
     """
     try:
-        user = await user_login(db, data.username, data.password)
+        user = await user_login(db, data.email, data.password)
     except InvalidEmailOrPassword:
         bad_resp = BadResponseSchema(
             message="Invalid email or password provided", status_code=400

@@ -22,7 +22,7 @@ async def file_upload(
 
 
 @routers.get("/download/file/{file_id}")
-async def file_download(file_id: str) -> StreamingResponse:
+async def file_download(file_id: str, user=Depends(get_current_user)) -> StreamingResponse:
     """
     download user file
     """
@@ -45,7 +45,7 @@ async def file_download(file_id: str) -> StreamingResponse:
 
 
 @routers.get("/download/qrcode/{qrcode_id}")
-async def qrcode_download(qrcode_id: str) -> StreamingResponse:
+async def qrcode_download(qrcode_id: str, user=Depends(get_current_user)) -> StreamingResponse:
     """
     route user qrcode...
     """
