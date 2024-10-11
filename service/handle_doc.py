@@ -11,61 +11,106 @@ from schemas.settings import settings
 db = firestore.client()
 
 setting = settings()
-FILE_EXTENSION = {
+FILE_EXTENSION = [
+    # Document Files
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".odt",
+    ".rtf",
+    ".txt",
+    ".html",
+    ".htm",
+    ".md",
+    ".epub",
+    ".xps",
+    # Spreadsheet Files
+    ".xls",
+    ".xlsx",
+    ".ods",
+    ".csv",
+    ".tsv",
+    ".numbers",
+    # Presentation Files
+    ".ppt",
+    ".pptx",
+    ".odp",
+    ".key",
+    ".pdf",
+    # Image Files
     ".jpg",
     ".jpeg",
     ".png",
     ".gif",
     ".bmp",
     ".tiff",
-    ".svg",
+    ".tif",
     ".webp",
+    ".heif",
     ".heic",
-    ".ico",
+    ".svg",
+    # Audio Files
     ".mp3",
     ".wav",
     ".aac",
     ".flac",
     ".ogg",
     ".wma",
-    ".m4a",
     ".aiff",
+    ".aif",
+    ".m4a",
+    # Video Files
     ".mp4",
     ".avi",
     ".mov",
-    ".mkv",
-    ".flv",
     ".wmv",
+    ".flv",
+    ".mkv",
     ".webm",
+    ".mpg",
+    ".mpeg",
     ".3gp",
-    ".pdf",
-    ".doc",
-    ".docx",
-    ".xls",
-    ".ppt",
-    ".pptx",
-    ".txt",
-    ".rt",
-    ".odt",
+    # Archive Files
     ".zip",
     ".rar",
     ".7z",
     ".tar",
     ".gz",
-    ".iso",
-    ".exe",
-    ".bat",
-    ".sh",
-    ".app",
-    ".msi",
-    ".json",
-    ".sql",
-    ".asp",
-    ".epub",
+    ".bz2",
+    # 3D Model and CAD Files
+    ".stl",
+    ".obj",
+    ".3ds",
+    ".fbx",
+    ".dxf",
+    ".step",
+    ".stp",
+    # Font Files
+    ".ttf",
+    ".otf",
+    ".woff",
+    ".woff2",
+    # E-book Files
     ".mobi",
-    ".psd",
+    ".azw",
+    ".azw3",
+    # Vector Graphics and Design Files
     ".ai",
-}
+    ".indd",
+    ".cdr",
+    ".eps",
+    # Database Files
+    ".mdb",
+    ".accdb",
+    ".sqlite",
+    ".db",
+    ".sql",
+    # Executable Files
+    ".exe",
+    ".AppImage",
+    ".deb",
+    ".rpm",
+]
 
 
 async def handle_file_upload(user_id: str, file: UploadFile) -> str:
@@ -105,7 +150,7 @@ async def handle_file_upload(user_id: str, file: UploadFile) -> str:
         raise HTTPException(status_code=500, detail=str(e))
 
     download_url = f"{setting.backend_host}/doc/download/file/{file_col[1].id}"
-    qrcode_url = await create_qr_code(file.filename, download_url, user_id, file_col) 
+    qrcode_url = await create_qr_code(file.filename, download_url, user_id, file_col)
     return download_url, qrcode_url
 
 
@@ -166,7 +211,6 @@ async def user_file(file_id: str):
     return file
 
 
-
 async def handle_user_qrcode_download(qrcode_id: str):
     """
     handle user qrcode download
@@ -175,8 +219,9 @@ async def handle_user_qrcode_download(qrcode_id: str):
     qrcode = qrcode.get()
     if not qrcode.exists:
         raise HTTPException(status_code=404, detail="qrcode not found")
-    
+
     return qrcode
+
 
 # this are being commenterd because ion know But I won't push this to production of cause...
 # from datetime import datetime, timedelta
