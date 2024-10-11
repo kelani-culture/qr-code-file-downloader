@@ -116,7 +116,7 @@ def google_auth(token: str) -> Dict[str, Union[str, int]]:
     except InvalidTokenProvided:
         return {"message": "Invalid token provided", "status_code": 400}
 
-    return {"message": "User email already exists", "status_code": 400}
+    return {"message": "User email created", "status_code": 201}
 
 
 async def generate_new_id_token(token: str) -> Dict[str, str]:
