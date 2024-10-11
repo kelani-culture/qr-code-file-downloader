@@ -3,13 +3,12 @@ from typing import Annotated, Dict, Optional, Union
 
 import httpx
 from fastapi import Depends, HTTPException, Request
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer
 from firebase_admin import auth
 from firebase_admin.auth import EmailAlreadyExistsError, InvalidIdTokenError
 from firebase_admin.exceptions import FirebaseError
 from google.auth.transport import requests
 from google.oauth2 import id_token
-from fastapi.security import HTTPBearer
 from httpx import HTTPError
 from sqlalchemy.orm import Session
 
@@ -117,7 +116,7 @@ def google_auth(token: str) -> Dict[str, Union[str, int]]:
     except InvalidTokenProvided:
         return {"message": "Invalid token provided", "status_code": 400}
 
-    return {"message": "User email already exists", "status_code": 201}
+    return {"message": "User email already exists", "status_code": 400}
 
 
 async def generate_new_id_token(token: str) -> Dict[str, str]:
