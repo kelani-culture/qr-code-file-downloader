@@ -63,7 +63,7 @@ async def login_user(
 @routers.post("/google-sign-in")
 async def goolge_auth_sign_up(google_token: GoogleSignInToken) -> JSONResponse:
     res = google_auth(google_token.token)
-    return JSONResponse(content=res, status_code=res["status_code"])
+    return JSONResponse(content=res, status_code=200)
 
 
 @routers.post("/refresh-token")

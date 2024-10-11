@@ -2,7 +2,7 @@ import json
 from typing import Annotated, Dict, Optional, Union
 
 import httpx
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer
 from firebase_admin import auth
 from firebase_admin.auth import EmailAlreadyExistsError, InvalidIdTokenError
@@ -97,27 +97,58 @@ def get_current_user(
         raise cred
 
 
-def google_auth(token: str) -> Dict[str, Union[str, int]]:
-    """hanldes user google auth"""
+# def google_auth(token: str) -> Dict[str, Union[str, int]]:
+#     """hanldes user google auth"""
+#     try:
+#         idinfo = id_token.verify_oauth2_token(token, requests.Request(), WEB_CLIENT_ID)
+#         # Google Sign In specific check
+#         if idinfo["iss"] not in ["accounts.google.com", "https://accounts.google.com"]:
+#             raise InvalidTokenProvided("Wrong Issuer provided")
+
+#         # userid = idinfo["sub"]
+#         email = idinfo["email"]
+#         try:
+#             auth.get_user_by_email(email)
+#             return {"message": "User already_exists", "status_code": 400}
+#         except auth.UserNotFoundError:
+#             auth.create_user(email=email, email_verified=idinfo["email_verified"])
+#     except InvalidTokenProvided:
+#         return {"message": "Invalid token provided", "status_code": 400}
+
+#     return {"message": "Login successful", "status_code": 201}
+
+async def google_auth(id_token_str: str) -> Dict[str, str]:
+    """Authenticate user with Google ID token."""
     WEB_CLIENT_ID: str = setting.web_client_id
     try:
-        idinfo = id_token.verify_oauth2_token(token, requests.Request(), WEB_CLIENT_ID)
-        # Google Sign In specific check
-        if idinfo["iss"] not in ["accounts.google.com", "https://accounts.google.com"]:
-            raise InvalidTokenProvided("Wrong Issuer provided")
+        # Verify the ID token
+        idinfo = id_token.verify_oauth2_token(id_token_str, requests.Request(), WEB_CLIENT_ID)
+        
+        # Check issuer
+        if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+            raise ValueError('Wrong issuer.')
 
-        # userid = idinfo["sub"]
-        email = idinfo["email"]
+        # Get or create the user in Firebase
+        email = idinfo['email']
         try:
-            auth.get_user_by_email(email)
-            return {"message": "User already_exists", "status_code": 400}
+            user = auth.get_user_by_email(email)
+            message = "Login successful"
         except auth.UserNotFoundError:
-            auth.create_user(email=email, email_verified=idinfo["email_verified"])
-    except InvalidTokenProvided:
-        return {"message": "Invalid token provided", "status_code": 400}
+            user = auth.create_user(email=email, email_verified=idinfo['email_verified'])
+            message = "User created successfully"
 
-    return {"message": "User email created", "status_code": 201}
+        # Create a custom token
+        custom_token = auth.create_custom_token(user.uid)  # No need for decode here
 
+        return {
+            "message": message,
+            "firebase_token": custom_token  # Send it directly
+        }
+
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid token: {str(ve)}")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Authentication error: {str(e)}")
 
 async def generate_new_id_token(token: str) -> Dict[str, str]:
     """
