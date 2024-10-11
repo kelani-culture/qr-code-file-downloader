@@ -1,28 +1,41 @@
-from typing import Annotated
 import io
-from fastapi import APIRouter, Depends, File, UploadFile
-from fastapi.responses import StreamingResponse
+
+from fastapi import APIRouter, Depends, File, UploadFile, Form
+from fastapi.responses import JSONResponse, StreamingResponse
 from firebase_admin import storage
 
 from schemas.file_schema import UserFileResponse
 from service.auth import get_current_user
-from service.handle_doc import handle_file_upload, user_file, handle_user_qrcode_download
+from service.handle_doc import (
+    handle_file_upload,
+    handle_user_qrcode_download,
+    user_file,
+)
 
 routers = APIRouter(prefix="/doc", tags=["User File"])
 
 
-@routers.post("/upload-file")
+@routers.post("/upload-file-or-url")
 async def file_upload(
-    file: Annotated[UploadFile, File(...)], user=Depends(get_current_user)
+    file: UploadFile = File(None),
+    url: str = Form(None),
+    user=Depends(get_current_user),
 ) -> UserFileResponse:
-    url = await handle_file_upload(user.uid, file)
+    if not url.startswith("https://"):
+        return JSONResponse(
+            content={"message": "Invalid URL resource provided"}, status_code=400
+        )
+
+    url = await handle_file_upload(user.uid, file, url)
     return UserFileResponse(
-        message="File uploaded successfully", file_url=url[0], qrcode_url=url[1]
+        message="File uploaded successfully", file_url=url[0], qrcode_url=url[1], qr_code_img_url=url[2]
     )
 
 
 @routers.get("/download/file/{file_id}")
-async def file_download(file_id: str, user=Depends(get_current_user)) -> StreamingResponse:
+async def file_download(
+    file_id: str, user=Depends(get_current_user)
+) -> StreamingResponse:
     """
     download user file
     """
@@ -39,13 +52,16 @@ async def file_download(file_id: str, user=Depends(get_current_user)) -> Streami
         file_stream,
         media_type="application/octet-stream",
         # filename=file.get("file_name"),
-        headers={"Content-Disposition": f'attachment; filename="{u_file.get("file_name")}"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{u_file.get("file_name")}"'
+        },
     )
 
 
-
 @routers.get("/download/qrcode/{qrcode_id}")
-async def qrcode_download(qrcode_id: str, user=Depends(get_current_user)) -> StreamingResponse:
+async def qrcode_download(
+    qrcode_id: str, user=Depends(get_current_user)
+) -> StreamingResponse:
     """
     route user qrcode...
     """
@@ -60,6 +76,7 @@ async def qrcode_download(qrcode_id: str, user=Depends(get_current_user)) -> Str
         qr_stream,
         media_type="application/octet-stream",
         # filename=file.get("file_name"),
-        headers={"Content-Disposition": f'attachment; filename="qrcode_{u_qrcode.get("id")}"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="qrcode_{u_qrcode.get("id")}"'
+        },
     )
-    

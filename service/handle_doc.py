@@ -1,5 +1,6 @@
 import uuid
 from io import BytesIO
+from typing import Optional
 
 import qrcode
 from fastapi import HTTPException, UploadFile
@@ -113,48 +114,61 @@ FILE_EXTENSION = [
 ]
 
 
-async def handle_file_upload(user_id: str, file: UploadFile) -> str:
+async def handle_file_upload(
+    user_id: str, file: Optional[UploadFile] = None, url: Optional[str] = None
+) -> str:
     """
     Handle user file upload to firestore
     """
     file_url = ""
-    try:
-        file_ext = file.filename.split(".")[1]
+    download_url = ""
+    file_col = None
+    qrcode_url = ""
+    if file:
+        try:
+            file_ext = file.filename.split(".")[1]
 
-        if "." + file_ext not in FILE_EXTENSION:
-            raise HTTPException(status_code=400, detail="File not supported")
-        unique_filename = f"{file.filename}{uuid.uuid4()}.{file_ext}"
+            if "." + file_ext not in FILE_EXTENSION:
+                raise HTTPException(status_code=400, detail="File not supported")
+            unique_filename = f"{file.filename}{uuid.uuid4()}.{file_ext}"
 
-        file_path = f"user_file/{user_id}/{unique_filename}"
-        # upload file to firebase storage
-        bucket = storage.bucket()
-        blob = bucket.blob(file_path)
-        blob.upload_from_file(file.file, content_type=file.content_type)
+            file_path = f"user_file/{user_id}/{unique_filename}"
+            # upload file to firebase storage
+            bucket = storage.bucket()
+            blob = bucket.blob(file_path)
+            blob.upload_from_file(file.file, content_type=file.content_type)
 
-        # make file publicly accessible
-        blob.make_public()
-        file_url = blob.public_url
+            # make file publicly accessible
+            blob.make_public()
+            file_url = blob.public_url
 
-        file_data = {
-            "user_id": user_id,
-            "file_name": file.filename,
-            "unique_filename": unique_filename,
-            "file_path": file_path,
-            "file_ext": file_ext,
-            "file_public_url": file_url,
-            "content_type": file.content_type,
-            "uploaded_at": firestore.SERVER_TIMESTAMP,
-        }
-        file_col = db.collection("user_file").add(file_data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+            file_data = {
+                "user_id": user_id,
+                "file_name": file.filename,
+                "unique_filename": unique_filename,
+                "file_path": file_path,
+                "file_ext": file_ext,
+                "file_public_url": file_url,
+                "content_type": file.content_type,
+                "uploaded_at": firestore.SERVER_TIMESTAMP,
+            }
+            file_col = db.collection("user_file").add(file_data)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+        download_url = f"{setting.backend_host}/doc/download/file/{file_col[1].id}"
+        qrcode_url, qr_code_img_url = await create_qr_code(file_name=file.filename, file_url=download_url, user_id=user_id, file_obj=file_col)
+    else:
+        download_url = file
+        qrcode_url, qr_code_img_url = await create_qr_code(user_id=user_id,file_url=url)
+    return download_url, qrcode_url, qr_code_img_url
 
-    download_url = f"{setting.backend_host}/doc/download/file/{file_col[1].id}"
-    qrcode_url = await create_qr_code(file.filename, download_url, user_id, file_col)
-    return download_url, qrcode_url
 
-
-async def create_qr_code(file_name: str, file_url: str, user_id: str, file_obj) -> str:
+async def create_qr_code(
+    user_id: str,
+    file_url: str,
+    file_name: Optional[str] = None,
+    file_obj = None,
+) -> str:
     """
     create qrcode for downloading user file
     """
@@ -169,7 +183,10 @@ async def create_qr_code(file_name: str, file_url: str, user_id: str, file_obj) 
     qr.make(fit=True)
     img = qr.make_image(fill="black", back_color="white")
 
-    qr_code_path = f"qrcode/{file_name}_qrcode.png"
+    if file_name:
+        qr_code_path = f"qrcode/{file_name}_qrcode.png"
+    else:
+        qr_code_path = f"qrcode/url_resource_{uuid.uuid4()}.png"
 
     # Convert image to bytes for Firebase storage
     img_bytes_array = BytesIO()
@@ -187,14 +204,14 @@ async def create_qr_code(file_name: str, file_url: str, user_id: str, file_obj) 
     data = {
         "qr_path": qr_code_path,
         "qrcode_url": qr_code_url,
-        "file_id": file_obj[1].id,
+        "file_id": file_obj[1].id if file_obj else None,
         "user_id": user_id,
     }
 
     qr_col = db.collection("qrcode").add(data)
 
     download_qr = f"{setting.backend_host}/doc/download/qrcode/{qr_col[1].id}"
-    return download_qr
+    return download_qr, qr_code_url
 
 
 async def user_file(file_id: str):
