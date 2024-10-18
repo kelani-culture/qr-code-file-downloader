@@ -1,6 +1,6 @@
 import io
 
-from fastapi import APIRouter, Depends, File, UploadFile, Form
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 from firebase_admin import storage
 
@@ -21,14 +21,16 @@ async def file_upload(
     url: str = Form(None),
     user=Depends(get_current_user),
 ) -> UserFileResponse:
-    if not url.startswith("https://"):
+    if url is not None and not url.startswith("https://"):
         return JSONResponse(
             content={"message": "Invalid URL resource provided"}, status_code=400
         )
-
     url = await handle_file_upload(user.uid, file, url)
     return UserFileResponse(
-        message="File uploaded successfully", file_url=url[0], qrcode_url=url[1], qr_code_img_url=url[2]
+        message="File uploaded successfully",
+        file_url=url[0],
+        qrcode_url=url[1],
+        qr_code_img_url=url[2],
     )
 
 

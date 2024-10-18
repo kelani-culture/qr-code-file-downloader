@@ -126,8 +126,11 @@ async def handle_file_upload(
     qrcode_url = ""
     if file:
         try:
-            file_ext = file.filename.split(".")[1]
-
+            file_ext = (
+                file.filename.split(".")[1]
+                if len(file.filename.split(".")) == 2
+                else file.filename.split(".")[-1]
+            )
             if "." + file_ext not in FILE_EXTENSION:
                 raise HTTPException(status_code=400, detail="File not supported")
             unique_filename = f"{file.filename}{uuid.uuid4()}.{file_ext}"
@@ -156,10 +159,17 @@ async def handle_file_upload(
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
         download_url = f"{setting.backend_host}/doc/download/file/{file_col[1].id}"
-        qrcode_url, qr_code_img_url = await create_qr_code(file_name=file.filename, file_url=download_url, user_id=user_id, file_obj=file_col)
+        qrcode_url, qr_code_img_url = await create_qr_code(
+            file_name=file.filename,
+            file_url=download_url,
+            user_id=user_id,
+            file_obj=file_col,
+        )
     else:
         download_url = file
-        qrcode_url, qr_code_img_url = await create_qr_code(user_id=user_id,file_url=url)
+        qrcode_url, qr_code_img_url = await create_qr_code(
+            user_id=user_id, file_url=url
+        )
     return download_url, qrcode_url, qr_code_img_url
 
 
@@ -167,7 +177,7 @@ async def create_qr_code(
     user_id: str,
     file_url: str,
     file_name: Optional[str] = None,
-    file_obj = None,
+    file_obj=None,
 ) -> str:
     """
     create qrcode for downloading user file
