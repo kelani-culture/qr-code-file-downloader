@@ -25,14 +25,13 @@ async def file_upload(
         return JSONResponse(
             content={"message": "Invalid URL resource provided"}, status_code=400
         )
-    url = await handle_file_upload(user.uid, file, url)
-    print(url)
-    message ="File uploaded successfully" if not url and url != "" else "Url uploaded successfully"
+    file_or_url = await handle_file_upload(user.uid, file, url)
+    message ="File uploaded successfully" if not url and url == "" else "Url uploaded successfully"
     return UserFileResponse(
         message=message,
-        file_url=url[0],
-        qrcode_url=url[1],
-        qr_code_img_url=url[2],
+        file_url=file_or_url[0],
+        qrcode_url=file_or_url[1],
+        qr_code_img_url=file_or_url[2],
     )
 
 
