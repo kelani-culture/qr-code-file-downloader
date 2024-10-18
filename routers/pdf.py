@@ -21,13 +21,15 @@ async def file_upload(
     url: str = Form(None),
     user=Depends(get_current_user),
 ) -> UserFileResponse:
-    if url is not None and not url.startswith("https://"):
+    if not url and not url.startswith("https://") and url!= "":
         return JSONResponse(
             content={"message": "Invalid URL resource provided"}, status_code=400
         )
     url = await handle_file_upload(user.uid, file, url)
+    print(url)
+    message ="File uploaded successfully" if not url and url != "" else "Url uploaded successfully"
     return UserFileResponse(
-        message="File uploaded successfully",
+        message=message,
         file_url=url[0],
         qrcode_url=url[1],
         qr_code_img_url=url[2],
